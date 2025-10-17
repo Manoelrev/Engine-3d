@@ -1,0 +1,23 @@
+html, body, div, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, canvas,  footer, header {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+
+body {
+	line-height: 1;
+    background-color: rgb(35, 35, 35);
+}
+
+canvas {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform:translate(-50%, -50%);
+    border: 4px solid rgb(220, 220, 220);
+}
