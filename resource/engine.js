@@ -1,15 +1,41 @@
 const canvas = document.getElementById('engine');
 const ctx = canvas.getContext('2d');
 
-// Define as dimensões do canvas
-canvas.width = 600;
-canvas.height = 600;
+// Variáveis Canvas
 
+let lastTime = 0;
+let accumulatedTime = 0;
+let timeStep = 1000/60; // 60 FPS (em milissegundos)
 
-// Variavéís
+// Variáveis Engine
 scale = 100
 angle = 0
 circle_pos = [canvas.width/2, canvas.height/2]
+
+cube = [
+		[ [0.0, 0.0, 0.0],    [0.0, 1.0, 0.0],    [1.0, 1.0, 0.0] ],
+		[ [0.0, 0.0, 0.0],    [1.0, 1.0, 0.0],    [1.0, 0.0, 0.0] ],
+                                                    
+		[ [1.0, 0.0, 0.0],    [1.0, 1.0, 0.0],    [1.0, 1.0, 1.0] ],
+        [ [1.0, 0.0, 0.0],    [1.0, 1.0, 1.0],    [1.0, 0.0, 1.0] ],
+                                                   
+        [ [1.0, 0.0, 1.0],    [1.0, 1.0, 1.0],    [0.0, 1.0, 1.0] ],
+        [ [1.0, 0.0, 1.0],    [0.0, 1.0, 1.0],    [0.0, 0.0, 1.0] ],
+                                                   
+		[ [0.0, 0.0, 1.0],    [0.0, 1.0, 1.0],    [0.0, 1.0, 0.0] ],
+		[ [0.0, 0.0, 1.0],    [0.0, 1.0, 0.0],    [0.0, 0.0, 0.0] ],
+                                                      
+		[ [0.0, 1.0, 0.0],    [0.0, 1.0, 1.0],    [1.0, 1.0, 1.0] ],
+		[ [0.0, 1.0, 0.0],    [1.0, 1.0, 1.0],    [1.0, 1.0, 0.0] ],
+                                                  
+        [ [1.0, 0.0, 1.0],    [0.0, 0.0, 1.0],    [0.0, 0.0, 0.0] ],
+        [ [1.0, 0.0, 1.0],    [0.0, 0.0, 0.0],    [1.0, 0.0, 0.0] ],
+];
+
+projection_matrix = [[1, 0, 0],[0, 1, 0]]
+
+projected_points = []
+
 
 function mdotmatrix(matrix1, matrix2) {
     result = []
@@ -21,21 +47,27 @@ function mdotmatrix(matrix1, matrix2) {
     return result
 }
 
-cube = [[-1, -1,  1],
-        [ 1, -1,  1],
-        [ 1,  1,  1],
-        [-1,  1,  1],
-        [-1, -1, -1],
-        [ 1, -1, -1],
-        [ 1,  1, -1],
-        [-1,  1, -1]]
+function mdotMultiplyMatrix(point, rotation_z, rotation_x, rotation_y) {
+    return mdotmatrix(rotation_y, mdotmatrix(rotation_x, mdotmatrix(rotation_z, point)))
+}
 
-projection_matrix = [[1, 0, 0],
-                     [0, 1, 0]]
+function clearCanvas(){
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
 
-projected_points = []
+function drawTriangle(triangleArray) {
+    ctx.beginPath();
+    ctx.moveTo(triangleArray[0][0], triangleArray[0][1]);
+    ctx.lineTo(triangleArray[1][0], triangleArray[1][1]);
+    ctx.lineTo(triangleArray[2][0], triangleArray[2][1]);
+    ctx.closePath();
+    ctx.stroke();
+}
 
 function render3d() {
+    angle += 0.01
+
     rotation_z = [
         [Math.cos(angle), -Math.sin(angle), 0],
         [Math.sin(angle), Math.cos(angle), 0],
@@ -51,47 +83,32 @@ function render3d() {
         [0, Math.cos(angle), -Math.sin(angle)],
         [0, Math.sin(angle), Math.cos(angle)]]
 
-    angle += 0.01
+    cube.forEach(triangle => {
+        projected_vertice = []
+        index = 0
 
-    i = 0
-    cube.forEach(point => {
-        rotated2d = mdotmatrix(rotation_z, point)
+    triangle.forEach(point => {
+        rotationXYZ = mdotMultiplyMatrix(point, rotation_z, rotation_x, rotation_z)
+        projected2d = mdotmatrix(projection_matrix, rotationXYZ)
         
-        rotated2d = mdotmatrix(rotation_y, rotated2d)
-        rotated2d = mdotmatrix(rotation_x, rotated2d)
+        x_pos = projected2d[0] * scale + circle_pos[0]
+        y_pos = projected2d[1] * scale + circle_pos[1]
 
-        projected2d = mdotmatrix(projection_matrix, rotated2d)
-        
-        x = projected2d[0] * scale + circle_pos[0]
-        y = projected2d[1] * scale + circle_pos[1]
-
-        projected_points[i] = [x, y]
-        i += 1
-    });
-    projected_points.forEach(x => {
-    projected_points.forEach(point => {
-        ctx.beginPath();
-        ctx.moveTo(x[0], x[1]);
-        ctx.lineTo(point[0], point[1]);
-        // Draw the Path
-        ctx.stroke();
-    })});
+        projected_vertice[index] = [x_pos, y_pos]
+        index++
+    })
+        projected_points.push(projected_vertice)
+        projected_points.forEach(vertice => {drawTriangle(vertice)});
+    })
+    projected_points.length = 0
 }
-                     
-// Variáveis da engine
-let lastTime = 0;
-let accumulatedTime = 0;
-let timeStep = 1000/60; // 60 FPS (em milissegundos)
-
 
 function update(deltaTime) {
-
+    circle_pos = [canvas.width/2, canvas.height/2]
 }
 
 function render() {
-
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    clearCanvas()
     render3d()
 }
 
